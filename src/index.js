@@ -11,17 +11,23 @@ function get(url) {
   }));
 }
 
-rxjs.Observable.of(
-    'http://www3.gogoanime.tv/category/a-channel',
-    'https://gogoanime.se/category/one-punch-man'
-    )
-    .flatMap(get)
+get('https://gogoanime.se/anime-list.html')
     .map(cheerio.load)
-    .flatMap(t => rxjs.Observable.of({
+    .flatMap(a => a('div.main_body > div.anime_list_body > ul.listing > li > a'))
+    .pluck('attribs', 'href')
+    .map(a => `http://www3.gogoanime.tv${a}`)
+    .flatMap(get)
+    .retry()
+    .map(cheerio.load)
+    .flatMap(t => rxjs.Observable.of(t)
+        .filter(v => t('input#movie_id')[0] && t('input#movie_id')[0].attribs && t('input#movie_id')[0].attribs.value)
+        .filter(v => t('ul#episode_page > li > a')[0] && t('ul#episode_page > li > a')[0].attribs && t('ul#episode_page > li > a')[0].attribs.ep_start)
+        .filter(v => t('ul#episode_page > li > a')[0] && t('ul#episode_page > li > a')[0].attribs && t('ul#episode_page > li > a')[0].attribs.ep_end)
+        .map(v => ({
             id: t('input#movie_id')[0].attribs.value,
             start: t('ul#episode_page > li > a')[0].attribs.ep_start,
             end: t('ul#episode_page > li > a')[0].attribs.ep_end
-          })
+          }))
         .map(t => `http://www3.gogoanime.tv/load-list-episode?ep_start=${t.start}&ep_end=${t.end}&id=${t.id}&default_ep=0`)
         .flatMap(get)
         .retry()
