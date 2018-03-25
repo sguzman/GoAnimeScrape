@@ -15,10 +15,9 @@
     "lodash": "4.17.5"
   },
   "dependencies": {
+    "@akanass/rx-http-request": "^2.7.1",
     "cheerio": "^1.0.0-rc.2",
     "lodash": "^4.17.5",
-    "request": "^2.85.0",
-    "request-promise": "^4.2.2",
     "rxjs": "^5.5.7",
     "string": "^3.3.3"
   }
