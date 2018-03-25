@@ -13,13 +13,13 @@ function get(url) {
 }
 
 rxjs.Observable.bindNodeCallback(fs.readFile)('./items.json', 'utf-8')
-    .catch(t => rxjs.Observable.bindNodeCallback(fs.writeFile)('./items.json', '{}').mapTo({}))
-    .flatMap(cache => rxjs.Observable.of(cache)
-        .flatMap(ignore => get('https://gogoanime.se/anime-list.html'))
+    .catch(t => rxjs.Observable.bindNodeCallback(fs.writeFile)('./items.json', '{}').mapTo('{}'))
+    .map(JSON.parse)
+    .flatMap(cache => get('https://gogoanime.se/anime-list.html')
         .map(cheerio.load)
         .flatMap(a => a('div.main_body > div.anime_list_body > ul.listing > li > a'))
         .pluck('attribs', 'href')
-        .flatMap(p => rxjs.Observable.if(() => cache[p], rxjs.Observable.of(cache[p]),
+        .flatMap(p => rxjs.Observable.if(() => cache[p], rxjs.Observable.of({[p]: cache[p]}),
                 rxjs.Observable.of(p)
                 .map(a => `http://www3.gogoanime.tv${a}`)
                 .flatMap(get)
@@ -71,8 +71,8 @@ rxjs.Observable.bindNodeCallback(fs.readFile)('./items.json', 'utf-8')
                 )
             )
         )
+        .scan((a, b) => Object.assign(a, b), {})
     )
-    .scan((a, b) => Object.assign({}, a, b), {})
     .do(a => fs.writeFileSync('./items.json', JSON.stringify(a, null, 4), {encoding: 'utf-8'}))
     .subscribe(
         console.log,
